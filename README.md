@@ -177,7 +177,7 @@ This service is pre-configured for deployment on **Render** using native Python 
 A production-ready Docker image is provided as a verified fallback execution path for organizers. 
 
 **Compliance Checklist**:
-- ✅ **Pullable Registry Reference**: `arafatsheikh098/gridwise-api:latest`
+- ✅ **Pullable Registry Reference**: `nazmul42726/gridwise-api:latest`
 - ✅ **Exposed Port**: Exposes port `8000` as documented.
 - ✅ **Host Binding**: Binds strictly to `0.0.0.0`.
 - ✅ **Secrets**: Does **NOT** contain any baked-in secrets. You must inject `GROQ_API_KEY` at runtime.
@@ -185,10 +185,10 @@ A production-ready Docker image is provided as a verified fallback execution pat
 ### Pull & Run from Registry:
 ```bash
 # 1. Pull the image
-docker pull arafatsheikh098/gridwise-api:latest
+docker pull nazmul42726/gridwise-api:latest
 
 # 2. Run the container
-docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" arafatsheikh098/gridwise-api:latest
+docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" nazmul42726/gridwise-api:latest
 
 # 3. Verify health
 curl -s http://localhost:8000/health
@@ -196,8 +196,8 @@ curl -s http://localhost:8000/health
 
 ### Build & Push (for Maintainers):
 ```bash
-docker build -t arafatsheikh098/gridwise-api:latest .
-docker push arafatsheikh098/gridwise-api:latest
+docker build -t nazmul42726/gridwise-api:latest .
+docker push nazmul42726/gridwise-api:latest
 ```
 
 ---
