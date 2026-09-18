@@ -216,6 +216,66 @@ Output:
 }
 """
 
+def apply_deterministic_guardrails(
+    llm_output: Dict[str, Any], 
+    battery_capacity: float, 
+    base_minimum_energy: float
+) -> Dict[str, Any]:
+    """
+    Validates LLM output against strict GridWise preliminary rules.
+    """
+    d_type = llm_output.get("directive_type")
+    
+    # Valid types
+    valid_types = ["solar_reduction", "minimum_battery_reserve", "no_charge_window", "no_discharge_window", "max_grid_window", "no_op"]
+    if d_type not in valid_types:
+        d_type = "no_op"
+        llm_output["directive_type"] = "no_op"
+        
+    adj = llm_output.get("structured_adjustment") or {}
+    
+    # 1. Enforce `applies` Semantics
+    if d_type == "no_op":
+        llm_output["applies"] = False
+        llm_output["structured_adjustment"] = None
+        return llm_output
+    
+    llm_output["applies"] = True
+    
+    # 2. Sanitize Hours (Must be unique integers 0-23 in ascending order)
+    raw_hours = adj.get("hours", [])
+    valid_hours = sorted(list(set([h for h in raw_hours if isinstance(h, int) and 0 <= h <= 23])))
+    adj["hours"] = valid_hours
+
+    # 3. Sanitize Directive-Specific Values
+    if d_type == "solar_reduction":
+        # Factor must be between 0.0 and 1.0
+        raw_factor = adj.get("factor", 1.0)
+        try:
+            adj["factor"] = max(0.0, min(1.0, float(raw_factor)))
+        except (ValueError, TypeError):
+            adj["factor"] = 1.0
+            
+    elif d_type == "minimum_battery_reserve":
+        # Reserve cannot exceed capacity or be less than the base minimum
+        raw_reserve = adj.get("minimum_energy_kwh", 0.0)
+        try:
+            adj["minimum_energy_kwh"] = max(base_minimum_energy, min(battery_capacity, float(raw_reserve)))
+        except (ValueError, TypeError):
+            adj["minimum_energy_kwh"] = base_minimum_energy
+            
+    elif d_type == "max_grid_window":
+        # Grid cap must be non-negative
+        raw_grid = adj.get("max_grid_kwh", 0.0)
+        try:
+            adj["max_grid_kwh"] = max(0.0, float(raw_grid))
+        except (ValueError, TypeError):
+            adj["max_grid_kwh"] = 0.0
+
+    llm_output["structured_adjustment"] = adj
+    return llm_output
+
+
 def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[DirectiveInterpretationEntry]:
     """
     Calls Groq API to interpret notes, then passes them through deterministic guardrails.
@@ -229,7 +289,7 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
 
     try:
         import time
-        max_retries = 3
+        max_retries = 4
         for attempt in range(max_retries):
             try:
                 response = client.chat.completions.create(
@@ -245,8 +305,9 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
                 break
             except Exception as e:
                 if "429" in str(e) and attempt < max_retries - 1:
-                    print(f"Rate limit hit, sleeping for 10 seconds before retry (Attempt {attempt+1}/{max_retries})...")
-                    time.sleep(10)
+                    sleep_time = 15 * (attempt + 1)
+                    print(f"Rate limit hit, sleeping for {sleep_time} seconds before retry (Attempt {attempt+1}/{max_retries})...")
+                    time.sleep(sleep_time)
                 else:
                     raise e
                     
@@ -287,28 +348,42 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
             extracted_directives = [{"directive_type": "no_op", "explanation": "No directives extracted or invalid structure."}]
             
         for d in extracted_directives:
-            dtype = d.get("directive_type", "no_op")
+            # Build the shape expected by apply_deterministic_guardrails
+            llm_dict_for_guardrails = {
+                "directive_type": d.get("directive_type", "no_op"),
+                "structured_adjustment": {
+                    "hours": d.get("hours"),
+                    "factor": d.get("factor"),
+                    "minimum_energy_kwh": d.get("minimum_energy_kwh"),
+                    "max_grid_kwh": d.get("max_grid_kwh")
+                },
+                "explanation": d.get("explanation", "")
+            }
             
-            # Valid types
-            valid_types = ["solar_reduction", "minimum_battery_reserve", "no_charge_window", "no_discharge_window", "max_grid_window", "no_op"]
-            if dtype not in valid_types:
-                dtype = "no_op"
-                
-            if dtype == "no_op":
+            # Apply the EXACT required guardrails logic
+            sanitized = apply_deterministic_guardrails(
+                llm_dict_for_guardrails, 
+                float(battery_specs["capacity_kwh"]), 
+                float(battery_specs["minimum_energy_kwh"])
+            )
+            
+            dtype = sanitized["directive_type"]
+            applies = sanitized["applies"]
+            adj_dict = sanitized.get("structured_adjustment")
+            explanation = sanitized.get("explanation", "")
+            
+            if not applies or adj_dict is None:
                 interpretations.append(
                     DirectiveInterpretationEntry(
                         note_index=i,
                         applies=False,
                         directive_type="no_op",
                         structured_adjustment=None,
-                        explanation=d.get("explanation", "Irrelevant note.")
+                        explanation=explanation
                     )
                 )
             else:
-                # Guardrail: clean hours
-                raw_hours = d.get("hours", [])
-                hours = sorted(list(set([h for h in raw_hours if isinstance(h, int) and 0 <= h <= 23])))
-                
+                hours = adj_dict.get("hours", [])
                 if not hours:
                     # A directive requiring hours cannot apply without valid hours
                     interpretations.append(
@@ -321,44 +396,26 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
                         )
                     )
                     continue
-                
-                # Build the correct per-type adjustment object
+                    
+                # Build the correct per-type adjustment Pydantic object
                 adjustment = None
                 
                 if dtype == "solar_reduction":
-                    factor = d.get("factor")
-                    if factor is not None:
-                        factor = max(0.0, min(1.0, float(factor)))
-                    else:
-                        factor = 1.0  # No reduction if factor missing
-                    adjustment = SolarReductionAdjustment(hours=hours, factor=factor)
-                    
+                    adjustment = SolarReductionAdjustment(hours=hours, factor=adj_dict["factor"])
                 elif dtype == "minimum_battery_reserve":
-                    min_e = d.get("minimum_energy_kwh")
-                    if min_e is not None:
-                        min_e = max(0.0, min(float(battery_specs["capacity_kwh"]), float(min_e)))
-                    else:
-                        min_e = 0.0
-                    adjustment = MinBatteryReserveAdjustment(hours=hours, minimum_energy_kwh=min_e)
-                    
+                    adjustment = MinBatteryReserveAdjustment(hours=hours, minimum_energy_kwh=adj_dict["minimum_energy_kwh"])
                 elif dtype in ("no_charge_window", "no_discharge_window"):
                     adjustment = WindowOnlyAdjustment(hours=hours)
-                    
                 elif dtype == "max_grid_window":
-                    max_grid = d.get("max_grid_kwh")
-                    if max_grid is not None:
-                        max_grid = max(0.0, float(max_grid))
-                    else:
-                        max_grid = 0.0
-                    adjustment = MaxGridWindowAdjustment(hours=hours, max_grid_kwh=max_grid)
-                
+                    adjustment = MaxGridWindowAdjustment(hours=hours, max_grid_kwh=adj_dict["max_grid_kwh"])
+                    
                 interpretations.append(
                     DirectiveInterpretationEntry(
                         note_index=i,
                         applies=True,
                         directive_type=dtype,
                         structured_adjustment=adjustment,
-                        explanation=d.get("explanation", "Applied directive.")
+                        explanation=explanation
                     )
                 )
             
