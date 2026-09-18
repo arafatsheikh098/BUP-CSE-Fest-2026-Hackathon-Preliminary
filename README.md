@@ -105,13 +105,34 @@ curl -s http://localhost:8000/health
 # Expected: {"status":"ok"}
 ```
 
-### 2. Public Sample Validation Suite (10 Cases)
+### 2. API Optimization Endpoint Example
+```bash
+curl -X POST http://localhost:8000/optimize-energy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scenario_id": "TEST-01",
+    "operator_notes": ["Grid import capped at 100 kWh from 6 PM to 10 PM."],
+    "battery": {
+      "capacity_kwh": 500.0,
+      "initial_energy_kwh": 200.0,
+      "minimum_energy_kwh": 50.0,
+      "max_charge_kwh_per_hour": 100.0,
+      "max_discharge_kwh_per_hour": 100.0
+    },
+    "hours": [
+      { "hour": 0, "demand_kwh": 145.0, "solar_kwh": 0.0, "tariff_bdt_per_kwh": 5.0 }
+    ]
+  }'
+# Note: Provide all 24 hours in a real request.
+```
+
+### 3. Public Sample Validation Suite (10 Cases)
 ```bash
 python test_runner.py
 # Validates all 10 sample cases, records execution times, and generates api_results.md
 ```
 
-### 3. Complex Corner Cases (13 Cases)
+### 4. Complex Corner Cases (13 Cases)
 ```bash
 python test_corner_cases.py
 # Tests challenging corner cases, rate limits, edge boundaries, and distractors
@@ -141,15 +162,21 @@ This service is pre-configured for deployment on **Render** using native Python 
 
 ## 🐳 Docker Fallback Image (Competition Item #4)
 
-A production-ready Docker image is provided as a verified fallback execution path:
+A production-ready Docker image is provided as a verified fallback execution path for organizers. 
+
+**Compliance Checklist**:
+- ✅ **Pullable Registry Reference**: `arafatsheikh098/gridwise-api:latest`
+- ✅ **Exposed Port**: Exposes port `8000` as documented.
+- ✅ **Host Binding**: Binds strictly to `0.0.0.0`.
+- ✅ **Secrets**: Does **NOT** contain any baked-in secrets. You must inject `GROQ_API_KEY` at runtime.
 
 ### Pull & Run from Registry:
 ```bash
 # 1. Pull the image
-docker pull <your-registry-username>/gridwise-api:latest
+docker pull arafatsheikh098/gridwise-api:latest
 
 # 2. Run the container
-docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" <your-registry-username>/gridwise-api:latest
+docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" arafatsheikh098/gridwise-api:latest
 
 # 3. Verify health
 curl -s http://localhost:8000/health
@@ -157,8 +184,8 @@ curl -s http://localhost:8000/health
 
 ### Build & Push (for Maintainers):
 ```bash
-docker build -t <your-registry-username>/gridwise-api:latest .
-docker push <your-registry-username>/gridwise-api:latest
+docker build -t arafatsheikh098/gridwise-api:latest .
+docker push arafatsheikh098/gridwise-api:latest
 ```
 
 ---
