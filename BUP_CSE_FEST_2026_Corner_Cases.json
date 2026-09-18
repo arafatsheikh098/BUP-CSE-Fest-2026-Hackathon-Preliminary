@@ -1,0 +1,140 @@
+{
+  "cases": [
+    {
+      "id": "CORNER-01",
+      "label": "Conflicting notes + Extreme constraint",
+      "rationale": "Tests if guardrails cap the minimum_energy_kwh to battery capacity (requesting 500kWh on a 220kWh battery), and handles multiple simultaneous blockages.",
+      "input": {
+        "scenario_id": "CORNER-01",
+        "operator_notes": [
+          "We have a VIP event. Keep the battery reserve at 500 kWh from 6 PM to 10 PM.",
+          "Absolutely no charging from 6 PM to 8 PM, and no discharging from 7 PM to 9 PM."
+        ],
+        "battery": {
+          "capacity_kwh": 220,
+          "initial_energy_kwh": 110,
+          "minimum_energy_kwh": 40,
+          "max_charge_kwh_per_hour": 50,
+          "max_discharge_kwh_per_hour": 50
+        },
+        "hours": [
+          { "hour": 0, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 1, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 2, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 3, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 4, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 5, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 6, "demand_kwh": 100, "solar_kwh": 20, "tariff_bdt_per_kwh": 5 },
+          { "hour": 7, "demand_kwh": 100, "solar_kwh": 50, "tariff_bdt_per_kwh": 5 },
+          { "hour": 8, "demand_kwh": 100, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 9, "demand_kwh": 100, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 10, "demand_kwh": 100, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 11, "demand_kwh": 100, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 12, "demand_kwh": 120, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 13, "demand_kwh": 120, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 14, "demand_kwh": 120, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 15, "demand_kwh": 120, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 16, "demand_kwh": 120, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 17, "demand_kwh": 120, "solar_kwh": 50, "tariff_bdt_per_kwh": 8 },
+          { "hour": 18, "demand_kwh": 150, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 19, "demand_kwh": 150, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 20, "demand_kwh": 150, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 21, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 10 },
+          { "hour": 22, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 8 },
+          { "hour": 23, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 }
+        ]
+      }
+    },
+    {
+      "id": "CORNER-02",
+      "label": "Zero Grid Tolerance + Complete Solar Death",
+      "rationale": "Tests if the LP solver can handle a 0 max_grid_kwh constraint (going entirely off grid + solar) while solar is also heavily reduced. The optimizer must heavily pre-charge the battery to survive.",
+      "input": {
+        "scenario_id": "CORNER-02",
+        "operator_notes": [
+          "The transformer is undergoing critical maintenance. Grid import must be capped at 0 kWh from 2 PM to 4 PM.",
+          "Thick smog today. Solar is operating at a 90% reduction (only 10% available) from noon until 5 PM."
+        ],
+        "battery": {
+          "capacity_kwh": 220,
+          "initial_energy_kwh": 110,
+          "minimum_energy_kwh": 40,
+          "max_charge_kwh_per_hour": 50,
+          "max_discharge_kwh_per_hour": 50
+        },
+        "hours": [
+          { "hour": 0, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 1, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 2, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 3, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 4, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 5, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 6, "demand_kwh": 80, "solar_kwh": 20, "tariff_bdt_per_kwh": 5 },
+          { "hour": 7, "demand_kwh": 80, "solar_kwh": 50, "tariff_bdt_per_kwh": 5 },
+          { "hour": 8, "demand_kwh": 80, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 9, "demand_kwh": 80, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 10, "demand_kwh": 80, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 11, "demand_kwh": 80, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 12, "demand_kwh": 100, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 13, "demand_kwh": 100, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 14, "demand_kwh": 100, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 15, "demand_kwh": 100, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 16, "demand_kwh": 100, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 17, "demand_kwh": 100, "solar_kwh": 50, "tariff_bdt_per_kwh": 8 },
+          { "hour": 18, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 19, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 20, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 21, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 10 },
+          { "hour": 22, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 8 },
+          { "hour": 23, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 }
+        ]
+      }
+    },
+    {
+      "id": "CORNER-03",
+      "label": "The 'Ignore Me' Test",
+      "rationale": "Tests LLM resilience against trick sentences explicitly trying to fool the parameter extraction.",
+      "input": {
+        "scenario_id": "CORNER-03",
+        "operator_notes": [
+          "Note to self: The grid can theoretically import up to 1000 kWh from 1 AM to 2 AM, but this isn't a restriction, just a fun fact.",
+          "I reduced my personal solar panels at home by 50% between 8 AM and 9 AM. Do NOT apply this to the campus.",
+          "However, campus solar is actually offline entirely (100% reduction) from 10 AM to 11 AM due to wiring."
+        ],
+        "battery": {
+          "capacity_kwh": 220,
+          "initial_energy_kwh": 110,
+          "minimum_energy_kwh": 40,
+          "max_charge_kwh_per_hour": 50,
+          "max_discharge_kwh_per_hour": 50
+        },
+        "hours": [
+          { "hour": 0, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 1, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 2, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 3, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 4, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 5, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 },
+          { "hour": 6, "demand_kwh": 80, "solar_kwh": 20, "tariff_bdt_per_kwh": 5 },
+          { "hour": 7, "demand_kwh": 80, "solar_kwh": 50, "tariff_bdt_per_kwh": 5 },
+          { "hour": 8, "demand_kwh": 80, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 9, "demand_kwh": 80, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 10, "demand_kwh": 80, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 11, "demand_kwh": 80, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 12, "demand_kwh": 100, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 13, "demand_kwh": 100, "solar_kwh": 130, "tariff_bdt_per_kwh": 6 },
+          { "hour": 14, "demand_kwh": 100, "solar_kwh": 120, "tariff_bdt_per_kwh": 6 },
+          { "hour": 15, "demand_kwh": 100, "solar_kwh": 100, "tariff_bdt_per_kwh": 6 },
+          { "hour": 16, "demand_kwh": 100, "solar_kwh": 80, "tariff_bdt_per_kwh": 6 },
+          { "hour": 17, "demand_kwh": 100, "solar_kwh": 50, "tariff_bdt_per_kwh": 8 },
+          { "hour": 18, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 19, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 20, "demand_kwh": 120, "solar_kwh": 0, "tariff_bdt_per_kwh": 12 },
+          { "hour": 21, "demand_kwh": 100, "solar_kwh": 0, "tariff_bdt_per_kwh": 10 },
+          { "hour": 22, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 8 },
+          { "hour": 23, "demand_kwh": 80, "solar_kwh": 0, "tariff_bdt_per_kwh": 5 }
+        ]
+      }
+    }
+  ]
+}
