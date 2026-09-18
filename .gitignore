@@ -19,5 +19,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Large Documentation / Prompts
+files/
+*.pdf
+
 # Output / Test Artifacts
 api_results.md
+execution_times.json
+test_runner_execution_times.json
