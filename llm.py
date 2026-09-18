@@ -305,7 +305,7 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
                 break
             except Exception as e:
                 if "429" in str(e) and attempt < max_retries - 1:
-                    sleep_time = 15 * (attempt + 1)
+                    sleep_time = 5.0  # Wait 5 seconds to allow token bucket to refill safely
                     print(f"Rate limit hit, sleeping for {sleep_time} seconds before retry (Attempt {attempt+1}/{max_retries})...")
                     time.sleep(sleep_time)
                 else:
