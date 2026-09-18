@@ -71,17 +71,29 @@ PORT=8000
 ### Method 1: Local Python Environment (Recommended for Development)
 
 ```bash
-# 1. Create and activate a virtual environment
+# 1. Create a virtual environment
 python3 -m venv venv
-source venv/bin/activate
 
-# 2. Install dependencies
+# 2. Activate the virtual environment
+# On macOS and Linux:
+source venv/bin/activate
+# On Windows (Command Prompt):
+venv\Scripts\activate
+# On Windows (PowerShell):
+venv\Scripts\Activate.ps1
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Configure environment
+# 4. Configure environment
+# On macOS and Linux:
 export GROQ_API_KEY="your_groq_api_key_here"
+# On Windows (Command Prompt):
+set GROQ_API_KEY=your_groq_api_key_here
+# On Windows (PowerShell):
+$env:GROQ_API_KEY="your_groq_api_key_here"
 
-# 4. Start the server
+# 5. Start the server
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
