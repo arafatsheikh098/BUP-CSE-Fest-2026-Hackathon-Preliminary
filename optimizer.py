@@ -67,6 +67,7 @@ def optimize_schedule(
     charge_vars = pulp.LpVariable.dicts("charge", H, lowBound=0, cat='Continuous')
     discharge_vars = pulp.LpVariable.dicts("discharge", H, lowBound=0, cat='Continuous')
     energy_vars = pulp.LpVariable.dicts("energy", H, lowBound=0, cat='Continuous')
+    z_vars = pulp.LpVariable.dicts("z", H, cat=pulp.LpBinary)
     
     # 4. Objective Function: minimize total cost
     prob += pulp.lpSum([grid_vars[i] * hours_data[i].tariff_bdt_per_kwh for i in H]), "Total_Cost"
@@ -76,9 +77,16 @@ def optimize_schedule(
         # Solar usage limit
         prob += solar_used_vars[i] <= effective_solar[i], f"Solar_Cap_{i}"
         
-        # Charge/Discharge limits
-        prob += charge_vars[i] <= (0 if charge_blocked[i] else battery_specs.max_charge_kwh_per_hour), f"Max_Charge_{i}"
-        prob += discharge_vars[i] <= (0 if discharge_blocked[i] else battery_specs.max_discharge_kwh_per_hour), f"Max_Discharge_{i}"
+        # Charge/Discharge limits with mutual exclusivity
+        if charge_blocked[i]:
+            prob += charge_vars[i] == 0.0, f"No_Charge_{i}"
+        else:
+            prob += charge_vars[i] <= battery_specs.max_charge_kwh_per_hour * z_vars[i], f"Max_Charge_{i}"
+            
+        if discharge_blocked[i]:
+            prob += discharge_vars[i] == 0.0, f"No_Discharge_{i}"
+        else:
+            prob += discharge_vars[i] <= battery_specs.max_discharge_kwh_per_hour * (1 - z_vars[i]), f"Max_Discharge_{i}"
         
         # Grid limit
         if max_grid[i] is not None:
@@ -107,44 +115,45 @@ def optimize_schedule(
     except Exception:
         # Fallback to system CBC installed via brew
         prob.solve(pulp.COIN_CMD(path="/opt/homebrew/bin/cbc", msg=False))
+        
+    if prob.status != pulp.LpStatusOptimal:
+        raise ValueError("Optimization problem infeasible or solver failed.")
     
     # 7. Extract Results
     hourly_plan = []
-    total_grid = 0.0
-    total_cost = 0.0
-    peak_grid = 0.0
+    TOLERANCE = 1e-4
     
     for i in H:
-        g = grid_vars[i].varValue or 0.0
-        su = solar_used_vars[i].varValue or 0.0
-        c = charge_vars[i].varValue or 0.0
-        d = discharge_vars[i].varValue or 0.0
-        e = energy_vars[i].varValue or 0.0
-        
-        total_grid += g
-        total_cost += g * hours_data[i].tariff_bdt_per_kwh
-        if g > peak_grid:
-            peak_grid = g
+        g = round(float(grid_vars[i].varValue or 0.0), 4)
+        su = round(float(solar_used_vars[i].varValue or 0.0), 4)
+        c = round(float(charge_vars[i].varValue or 0.0), 4)
+        d = round(float(discharge_vars[i].varValue or 0.0), 4)
+        e = round(float(energy_vars[i].varValue or 0.0), 4)
             
         # Determine battery action
         action = "idle"
         bat_kwh = 0.0
-        if c > 0.01:
+        if c > TOLERANCE:
             action = "charge"
             bat_kwh = c
-        elif d > 0.01:
+        elif d > TOLERANCE:
             action = "discharge"
             bat_kwh = d
             
         hourly_plan.append(
             HourlyPlanEntry(
                 hour=i,
-                grid_kwh=round(g, 3),
-                solar_used_kwh=round(su, 3),
+                grid_kwh=g,
+                solar_used_kwh=su,
                 battery_action=action,
-                battery_kwh=round(bat_kwh, 3),
-                battery_energy_after_kwh=round(e, 3)
+                battery_kwh=bat_kwh,
+                battery_energy_after_kwh=e
             )
         )
         
-    return hourly_plan, round(total_grid, 3), round(total_cost, 3), round(peak_grid, 3)
+    # 8. Recalculate Top-Level Aggregates directly from hourly_plan
+    total_grid = round(sum(item.grid_kwh for item in hourly_plan), 4)
+    total_cost = round(sum(item.grid_kwh * hours_data[item.hour].tariff_bdt_per_kwh for item in hourly_plan), 4)
+    peak_grid = round(max(item.grid_kwh for item in hourly_plan), 4)
+        
+    return hourly_plan, total_grid, total_cost, peak_grid
