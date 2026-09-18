@@ -26,7 +26,8 @@ SYSTEM_PROMPT = """
 You are an expert energy operations parser for BUP Smart Campus.
 Your sole job is to translate 1 to 3 natural-language operator notes into structured machine directives.
 
-Given operator notes about a 24-hour campus energy schedule, extract ALL relevant directives from EACH note. A single note may contain multiple directives.
+Each scenario contains 1 to 3 operator notes (indexed 0 to N-1).
+Each operator note translates to EXACTLY ONE machine directive interpretation (or "no_op" if it is irrelevant or a distractor).
 
 ### DIRECTIVE TYPES & REQUIRED ADJUSTMENTS:
 1. "solar_reduction": Usable solar drops during specific hours.
@@ -59,8 +60,8 @@ Given operator notes about a 24-hour campus energy schedule, extract ALL relevan
 
 ### STRICT RULES:
 - You MUST return a JSON object with a single key "note_interpretations", which is a list of objects.
-- The list MUST contain exactly one entry per input operator note, in the exact same order.
-- Each entry MUST have a "directives" key, which is a list of one or more directive objects.
+- The list MUST contain EXACTLY ONE entry per input operator note, in note_index order: 0, 1, ... N-1.
+- Each entry corresponds to that note's primary directive (or "no_op").
 - Time intervals: Start hour is INCLUDED, end hour is EXCLUDED.
   - "1 PM to 3 PM" or "13:00 to 15:00" -> hours: [13, 14]
   - "noon until 2 PM" or "12 PM to 2 PM" -> hours: [12, 13]
@@ -75,16 +76,13 @@ Given operator notes about a 24-hour campus energy schedule, extract ALL relevan
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "<one of 6 types>",
-          "hours": [int, ...] or omit for no_op,
-          "factor": float (only for solar_reduction),
-          "minimum_energy_kwh": float (only for minimum_battery_reserve),
-          "max_grid_kwh": float (only for max_grid_window),
-          "explanation": "Short reason"
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "<one of 6 types>",
+      "hours": [int, ...] or omit for no_op,
+      "factor": float (only for solar_reduction),
+      "minimum_energy_kwh": float (only for minimum_battery_reserve),
+      "max_grid_kwh": float (only for max_grid_window),
+      "explanation": "Short reason"
     }
   ]
 }
@@ -99,22 +97,16 @@ Output:
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "solar_reduction",
-          "hours": [13, 14],
-          "factor": 0.2,
-          "explanation": "Solar output drops to 20% of normal from 1 PM to 3 PM."
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "solar_reduction",
+      "hours": [13, 14],
+      "factor": 0.2,
+      "explanation": "Solar output drops to 20% of normal from 1 PM to 3 PM."
     },
     {
-      "directives": [
-        {
-          "directive_type": "no_op",
-          "explanation": "Campus visit does not affect the energy schedule."
-        }
-      ]
+      "note_index": 1,
+      "directive_type": "no_op",
+      "explanation": "Campus visit does not affect the energy schedule."
     }
   ]
 }
@@ -127,24 +119,18 @@ Output:
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "solar_reduction",
-          "hours": [13, 14],
-          "factor": 0.2,
-          "explanation": "80% curtailment leaves 20% usable solar for hours 13 and 14."
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "solar_reduction",
+      "hours": [13, 14],
+      "factor": 0.2,
+      "explanation": "80% curtailment leaves 20% usable solar for hours 13 and 14."
     },
     {
-      "directives": [
-        {
-          "directive_type": "max_grid_window",
-          "hours": [19, 20, 21],
-          "max_grid_kwh": 150.0,
-          "explanation": "Grid capped at 150 kWh per hour from 7 PM to 10 PM."
-        }
-      ]
+      "note_index": 1,
+      "directive_type": "max_grid_window",
+      "hours": [19, 20, 21],
+      "max_grid_kwh": 150.0,
+      "explanation": "Grid capped at 150 kWh per hour from 7 PM to 10 PM."
     }
   ]
 }
@@ -156,14 +142,11 @@ Output:
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "solar_reduction",
-          "hours": [13, 14],
-          "factor": 0.2,
-          "explanation": "Panel washing reduces solar to one-fifth (20%) from 1 PM to 3 PM."
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "solar_reduction",
+      "hours": [13, 14],
+      "factor": 0.2,
+      "explanation": "Panel washing reduces solar to one-fifth (20%) from 1 PM to 3 PM."
     }
   ]
 }
@@ -176,23 +159,17 @@ Output:
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "no_discharge_window",
-          "hours": [18, 19, 20],
-          "explanation": "Battery discharging forbidden from 6 PM to 9 PM."
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "no_discharge_window",
+      "hours": [18, 19, 20],
+      "explanation": "Battery discharging forbidden from 6 PM to 9 PM."
     },
     {
-      "directives": [
-        {
-          "directive_type": "minimum_battery_reserve",
-          "hours": [18, 19, 20],
-          "minimum_energy_kwh": "<50% of battery capacity>",
-          "explanation": "Battery must maintain at least 50% of capacity from 6 PM to 9 PM."
-        }
-      ]
+      "note_index": 1,
+      "directive_type": "minimum_battery_reserve",
+      "hours": [18, 19, 20],
+      "minimum_energy_kwh": "<50% of battery capacity>",
+      "explanation": "Battery must maintain at least 50% of capacity from 6 PM to 9 PM."
     }
   ]
 }
@@ -204,13 +181,10 @@ Output:
 {
   "note_interpretations": [
     {
-      "directives": [
-        {
-          "directive_type": "no_charge_window",
-          "hours": [2, 3, 4],
-          "explanation": "Battery charging unavailable during maintenance from 2 AM to 5 AM."
-        }
-      ]
+      "note_index": 0,
+      "directive_type": "no_charge_window",
+      "hours": [2, 3, 4],
+      "explanation": "Battery charging unavailable during maintenance from 2 AM to 5 AM."
     }
   ]
 }
@@ -289,7 +263,7 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
 
     try:
         import time
-        max_retries = 4
+        max_retries = 3
         for attempt in range(max_retries):
             try:
                 response = client.chat.completions.create(
@@ -305,7 +279,7 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
                 break
             except Exception as e:
                 if "429" in str(e) and attempt < max_retries - 1:
-                    sleep_time = 5.0  # Wait 5 seconds to allow token bucket to refill safely
+                    sleep_time = 3.5  # Safe retry delay keeping total time well under 30s timeout
                     print(f"Rate limit hit, sleeping for {sleep_time} seconds before retry (Attempt {attempt+1}/{max_retries})...")
                     time.sleep(sleep_time)
                 else:
@@ -318,7 +292,7 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
         print(f"Error calling LLM or parsing JSON: {e}")
         note_interpretations = []
 
-    # Deterministic Guardrails & Fallback
+    # Deterministic Guardrails & Fallback (Guarantees EXACT 1-to-1 mapping for each note)
     interpretations = []
     for i, note in enumerate(notes):
         # Fallback to no_op if LLM missed this note
@@ -347,56 +321,64 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
         if not extracted_directives:
             extracted_directives = [{"directive_type": "no_op", "explanation": "No directives extracted or invalid structure."}]
             
-        for d in extracted_directives:
-            # Build the shape expected by apply_deterministic_guardrails
-            llm_dict_for_guardrails = {
-                "directive_type": d.get("directive_type", "no_op"),
-                "structured_adjustment": {
-                    "hours": d.get("hours"),
-                    "factor": d.get("factor"),
-                    "minimum_energy_kwh": d.get("minimum_energy_kwh"),
-                    "max_grid_kwh": d.get("max_grid_kwh")
-                },
-                "explanation": d.get("explanation", "")
-            }
-            
-            # Apply the EXACT required guardrails logic
-            sanitized = apply_deterministic_guardrails(
-                llm_dict_for_guardrails, 
-                float(battery_specs["capacity_kwh"]), 
-                float(battery_specs["minimum_energy_kwh"])
+        # Select the single primary directive for note i (guaranteeing exact 1-to-1 mapping)
+        chosen_d = None
+        for candidate in extracted_directives:
+            if isinstance(candidate, dict) and candidate.get("directive_type", "no_op") != "no_op":
+                chosen_d = candidate
+                break
+        if chosen_d is None:
+            chosen_d = extracted_directives[0] if (extracted_directives and isinstance(extracted_directives[0], dict)) else {"directive_type": "no_op", "explanation": "No valid directive identified."}
+
+        d = chosen_d
+        # Build the shape expected by apply_deterministic_guardrails
+        llm_dict_for_guardrails = {
+            "directive_type": d.get("directive_type", "no_op"),
+            "structured_adjustment": {
+                "hours": d.get("hours"),
+                "factor": d.get("factor"),
+                "minimum_energy_kwh": d.get("minimum_energy_kwh"),
+                "max_grid_kwh": d.get("max_grid_kwh")
+            },
+            "explanation": d.get("explanation", "")
+        }
+        
+        # Apply the EXACT required guardrails logic
+        sanitized = apply_deterministic_guardrails(
+            llm_dict_for_guardrails, 
+            float(battery_specs["capacity_kwh"]), 
+            float(battery_specs["minimum_energy_kwh"])
+        )
+        
+        dtype = sanitized["directive_type"]
+        applies = sanitized["applies"]
+        adj_dict = sanitized.get("structured_adjustment")
+        explanation = sanitized.get("explanation", "")
+        
+        if not applies or adj_dict is None:
+            interpretations.append(
+                DirectiveInterpretationEntry(
+                    note_index=i,
+                    applies=False,
+                    directive_type="no_op",
+                    structured_adjustment=None,
+                    explanation=explanation
+                )
             )
-            
-            dtype = sanitized["directive_type"]
-            applies = sanitized["applies"]
-            adj_dict = sanitized.get("structured_adjustment")
-            explanation = sanitized.get("explanation", "")
-            
-            if not applies or adj_dict is None:
+        else:
+            hours = adj_dict.get("hours", [])
+            if not hours:
+                # A directive requiring hours cannot apply without valid hours
                 interpretations.append(
                     DirectiveInterpretationEntry(
                         note_index=i,
                         applies=False,
                         directive_type="no_op",
                         structured_adjustment=None,
-                        explanation=explanation
+                        explanation="Guardrail: Directive contained no valid hours."
                     )
                 )
             else:
-                hours = adj_dict.get("hours", [])
-                if not hours:
-                    # A directive requiring hours cannot apply without valid hours
-                    interpretations.append(
-                        DirectiveInterpretationEntry(
-                            note_index=i,
-                            applies=False,
-                            directive_type="no_op",
-                            structured_adjustment=None,
-                            explanation="Guardrail: Directive contained no valid hours."
-                        )
-                    )
-                    continue
-                    
                 # Build the correct per-type adjustment Pydantic object
                 adjustment = None
                 
@@ -418,5 +400,5 @@ def interpret_notes(notes: List[str], battery_specs: Dict[str, Any]) -> List[Dir
                         explanation=explanation
                     )
                 )
-            
+        
     return interpretations

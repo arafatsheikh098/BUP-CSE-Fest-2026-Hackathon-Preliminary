@@ -18,6 +18,7 @@ def optimize_schedule(
     """
     
     # 1. Apply deterministic effects to input data before modeling
+    original_solar = {h.hour: h.solar_kwh for h in hours_data}
     effective_solar = {h.hour: h.solar_kwh for h in hours_data}
     min_reserve = {h.hour: battery_specs.minimum_energy_kwh for h in hours_data}
     max_grid = {h.hour: None for h in hours_data}
@@ -32,7 +33,7 @@ def optimize_schedule(
             if d.directive_type == "solar_reduction" and isinstance(adj, SolarReductionAdjustment):
                 for h in hours:
                     if h in effective_solar:
-                        effective_solar[h] *= adj.factor
+                        effective_solar[h] = min(effective_solar[h], original_solar[h] * adj.factor)
                         
             elif d.directive_type == "minimum_battery_reserve" and isinstance(adj, MinBatteryReserveAdjustment):
                 for h in hours:
