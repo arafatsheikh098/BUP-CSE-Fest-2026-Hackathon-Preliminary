@@ -81,7 +81,7 @@ This file contains the validation results for all 10 public sample cases.
       ],
       "minimum_energy_kwh": 100.0
     },
-    "explanation": "Battery must keep at least 50% (100\u202fkWh) of its 200\u202fkWh capacity from 6\u202fPM to 9\u202fPM for emergencies."
+    "explanation": "Battery must maintain at least 50% (100\u202fkWh) of its 200\u202fkWh capacity from 6\u202fPM to 9\u202fPM for emergency operations."
   }
 ]
 ```
@@ -106,7 +106,7 @@ This file contains the validation results for all 10 public sample cases.
         19
       ]
     },
-    "explanation": "Battery discharge prohibited from 6\u202fPM to 8\u202fPM."
+    "explanation": "Battery discharging prohibited from 6\u202fPM to 8\u202fPM for protection testing."
   }
 ]
 ```
@@ -159,7 +159,7 @@ This file contains the validation results for all 10 public sample cases.
       ],
       "factor": 0.5
     },
-    "explanation": "Solar output reduced to 50% of forecast from 10 AM to noon."
+    "explanation": "Solar output reduced to 50% from 10 AM to noon."
   },
   {
     "note_index": 1,
@@ -171,14 +171,14 @@ This file contains the validation results for all 10 public sample cases.
         15
       ]
     },
-    "explanation": "Battery charging unavailable from 2 PM to 4 PM."
+    "explanation": "Charging unavailable from 2 PM to 4 PM."
   },
   {
     "note_index": 2,
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "Library schedule change does not affect energy schedule."
+    "explanation": "Library hour change does not affect energy scheduling."
   }
 ]
 ```
@@ -206,7 +206,7 @@ This file contains the validation results for all 10 public sample cases.
       ],
       "minimum_energy_kwh": 90.0
     },
-    "explanation": "Maintain at least 90\u202fkWh in battery from 6\u202fPM to 10\u202fPM for emergency services."
+    "explanation": "Maintain at least 90\u202fkWh in the battery from 6\u202fPM to 10\u202fPM for emergency services."
   },
   {
     "note_index": 1,
@@ -244,7 +244,7 @@ This file contains the validation results for all 10 public sample cases.
         12
       ]
     },
-    "explanation": "Battery charging disabled from 11 AM to 1 PM for charger inspection."
+    "explanation": "Battery charging disabled from 11 AM to 1 PM for maintenance."
   },
   {
     "note_index": 1,
@@ -256,7 +256,7 @@ This file contains the validation results for all 10 public sample cases.
         18
       ]
     },
-    "explanation": "Battery discharging prohibited from 5 PM to 7 PM during relay testing."
+    "explanation": "Battery discharging prohibited from 5 PM to 7 PM during testing."
   }
 ]
 ```
@@ -318,7 +318,7 @@ This file contains the validation results for all 10 public sample cases.
       ],
       "minimum_energy_kwh": 80.0
     },
-    "explanation": "Battery must retain at least 80\u202fkWh from 6\u202fPM to 10\u202fPM."
+    "explanation": "Battery must retain at least 80 kWh from 6\u202fPM to 10\u202fPM."
   },
   {
     "note_index": 1,
@@ -339,7 +339,7 @@ This file contains the validation results for all 10 public sample cases.
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "Seminar room booking does not affect energy scheduling."
+    "explanation": "Seminar room booking does not affect energy schedule."
   }
 ]
 ```
