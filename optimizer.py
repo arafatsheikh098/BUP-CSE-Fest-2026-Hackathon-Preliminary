@@ -1,3 +1,4 @@
+import shutil
 import pulp
 from typing import List, Tuple
 from schemas import (
@@ -113,8 +114,9 @@ def optimize_schedule(
     try:
         prob.solve(pulp.PULP_CBC_CMD(msg=False))
     except Exception:
-        # Fallback to system CBC installed via brew
-        prob.solve(pulp.COIN_CMD(path="/opt/homebrew/bin/cbc", msg=False))
+        # Fallback to system CBC installed via apt/brew
+        cbc_path = shutil.which("cbc") or "/opt/homebrew/bin/cbc"
+        prob.solve(pulp.COIN_CMD(path=cbc_path, msg=False))
         
     if prob.status != pulp.LpStatusOptimal:
         raise ValueError("Optimization problem infeasible or solver failed.")

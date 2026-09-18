@@ -1,65 +1,169 @@
 # BUP CSE Fest 2026 - GridWise Hackathon Preliminary Solution
 
-This repository contains our complete solution for the **Smart Campus Energy Optimization Challenge (GridWise)**. It provides a robust, fast, and mathematically optimal API that translates human operator notes into strict constraints and generates a cost-minimized 24-hour energy schedule.
+This repository contains the complete solution for the **Smart Campus Energy Optimization Challenge (GridWise)** at BUP CSE Fest 2026. It provides a robust, fast, and mathematically optimal HTTP API that translates unstructured operator notes into strict scheduling directives and computes an optimal 24-hour energy dispatch schedule.
 
-## 🚀 Architecture
+---
 
-Our solution is designed around a 3-stage pipeline to ensure maximum accuracy and reliability:
+## 🚀 Architecture Overview
 
-1. **LLM Interpretation Engine (Groq API)**: We utilize the Groq API (specifically the `openai/gpt-oss-120b` model) in structured JSON mode to parse plain English operator notes. Groq was specifically chosen over standard Gemini/OpenAI free tiers to **avoid HTTP 429 Too Many Requests rate limits** during automated judging.
-2. **Deterministic Guardrails**: The raw LLM output is passed through strict Python guardrails. This step enforces time-window formatting (e.g., converting "1 PM to 3 PM" to `[13, 14]`), validates factor percentages (e.g., "80% reduction" = `0.2` remaining), and gracefully degrades malformed responses to safe `no_op` directives.
-3. **Linear Programming Optimizer (PuLP)**: We formulated the energy balance and directives as a strict mathematical Linear Program. Solved via the CBC engine, this guarantees that energy constraints are NEVER violated, battery neutrality is strictly enforced, and the overall BDT cost is mathematically minimized to the absolute lowest possible value.
+Our solution implements the 3-stage pipeline mandated by the challenge:
+
+1. **LLM Interpretation Engine (Groq API)**:
+   - **Model**: `openai/gpt-oss-120b` via Groq Python SDK.
+   - Operates in strict JSON mode with zero temperature (`temperature=0.0`) to extract operator note intents into structured directives (`solar_reduction`, `minimum_battery_reserve`, `no_charge_window`, `no_discharge_window`, `max_grid_window`, or `no_op`).
+   - Includes automatic exponential backoff and retry mechanisms to handle API rate limits gracefully.
+
+2. **Deterministic Guardrails**:
+   - Validates and sanitizes raw model output against the problem specification:
+     - Enforces ascending, unique integer hours ($0 \le h \le 23$) with half-open intervals ($[\text{start}, \text{end})$).
+     - Caps reduction factors strictly between $[0.0, 1.0]$.
+     - Constrains minimum energy reserve within $[0.0, \text{capacity\_kwh}]$.
+     - Constrains grid import limits to non-negative floats.
+     - Gracefully degrades malformed, unsupported, or missing outputs to safe `no_op` (`applies = false`, `structured_adjustment = null`).
+
+3. **Linear Programming Optimizer (PuLP + CBC)**:
+   - Formulates the 24-hour campus energy scheduling problem as a Mixed-Integer Linear Program (MILP).
+   - Incorporates binary decision variables ($z_h \in \{0, 1\}$) to guarantee strict mutual exclusivity between battery charging and discharging.
+   - Satisfies hourly energy balance, battery capacity limits, solar usage limits, grid import caps, and end-of-day battery energy neutrality.
+   - Minimizes total grid electricity cost in BDT.
+   - Solved with the COIN-OR CBC solver via PuLP.
+
+---
 
 ## 🏆 Performance
 
-Our API achieves a **perfect 10/10 passing score** against the provided Public Sample Cases, matching the expected `total_cost_bdt` exactly to the decimal.
+- **Public Sample Cases**: **10/10 Passed** with exact decimal cost match.
+- **Latency**: Mean per-request response time $\approx 1.5 - 2.5\text{s}$, well within the $p95 \le 5\text{s}$ threshold.
+- **Complexity**: Solves LP instances in $< 50\text{ms}$.
 
-## 🛠️ Tech Stack
+---
 
-- **Framework**: Python 3.11 + FastAPI (for high-performance async JSON serving)
-- **Validation**: Pydantic (ensures 100% adherence to the hackathon's input/output schema)
-- **Optimizer**: PuLP + COIN-OR CBC Solver (pure Linear Programming)
-- **AI/LLM**: Groq Python SDK
+## 🛠️ Tech Stack & Dependencies
 
-## ⚙️ How to Run Locally
+- **Runtime**: Python 3.11+
+- **API Framework**: FastAPI (`fastapi==0.111.0`, `uvicorn==0.30.1`)
+- **Schema Validation**: Pydantic v2 (`pydantic==2.7.4`)
+- **Mathematical Solver**: PuLP (`pulp==2.8.0`) + COIN-OR CBC
+- **LLM Provider**: Groq SDK (`groq==0.11.0`)
+- **HTTP Client**: HTTPX (`httpx==0.27.2`)
+- **Environment Management**: Python-dotenv (`python-dotenv==1.0.1`)
 
-### Option 1: Docker (Recommended)
-This is the safest way to run the API, as the Dockerfile automatically installs the required system binaries for the CBC mathematical solver.
+---
 
-```bash
-# 1. Build the image
-docker build -t gridwise-api .
+## ⚙️ Configuration & Environment Variables
 
-# 2. Run the container (Make sure to pass your Groq API Key)
-docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" gridwise-api
+Create a `.env` file in the root directory (do not commit this file):
+
+```ini
+GROQ_API_KEY=your_groq_api_key_here
+PORT=8000
 ```
 
-### Option 2: Python Virtual Environment
-Requires Python 3.11+ and the `coinor-cbc` binary installed on your system (e.g., `brew install cbc` on macOS or `apt-get install coinor-cbc` on Linux).
+| Variable | Required | Description |
+| :--- | :---: | :--- |
+| `GROQ_API_KEY` | **Yes** | API key for Groq Cloud. |
+| `PORT` | No | Port to bind the server to (defaults to `8000`, dynamically set by Render). |
+
+---
+
+## 💻 Local Quickstart
+
+### Method 1: Local Python Environment (Recommended for Development)
 
 ```bash
-python3.11 -m venv venv
+# 1. Create and activate a virtual environment
+python3 -m venv venv
 source venv/bin/activate
+
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# Set your API key
+# 3. Configure environment
 export GROQ_API_KEY="your_groq_api_key_here"
 
-# Run the server
-uvicorn main:app --host 0.0.0.0 --port 8000
+# 4. Start the server
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## 🧪 Running the Tests
-
-Once the server is running on `localhost:8000`, you can execute the test suite which validates the endpoint against the 10 provided sample cases:
+### Method 2: Docker Compose (Live Hot-Reloading)
 
 ```bash
-python test_runner.py
+# Start container with volume mounting and auto-reload on file edits
+docker compose up
+
+# Stop container
+docker compose down
 ```
+
+---
+
+## 🧪 Running Tests & Verification
+
+### 1. Health Check
+```bash
+curl -s http://localhost:8000/health
+# Expected: {"status":"ok"}
+```
+
+### 2. Public Sample Validation Suite (10 Cases)
+```bash
+python test_runner.py
+# Validates all 10 sample cases, records execution times, and generates api_results.md
+```
+
+### 3. Complex Corner Cases (13 Cases)
+```bash
+python test_corner_cases.py
+# Tests challenging corner cases, rate limits, edge boundaries, and distractors
+```
+
+---
+
+## 🌐 Production Deployment (Render)
+
+This service is pre-configured for deployment on **Render** using native Python (`requirements.txt`).
+
+1. In the [Render Dashboard](https://dashboard.render.com/):
+   - Click **New +** $\to$ **Web Service**.
+   - Connect this GitHub repository.
+   - **Environment / Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+2. **Environment Variables**:
+   - `GROQ_API_KEY`: *(your Groq API key)*
+   - `PYTHON_VERSION`: `3.11.10`
+3. **Health Check Path**: `/health`
+4. Click **Create Web Service**.
+
+> Render automatically injects the `$PORT` variable into the runtime environment.
+
+---
+
+## 🐳 Docker Fallback Image (Competition Item #4)
+
+A production-ready Docker image is provided as a verified fallback execution path:
+
+### Pull & Run from Registry:
+```bash
+# 1. Pull the image
+docker pull <your-registry-username>/gridwise-api:latest
+
+# 2. Run the container
+docker run -d -p 8000:8000 -e GROQ_API_KEY="your_groq_api_key_here" <your-registry-username>/gridwise-api:latest
+
+# 3. Verify health
+curl -s http://localhost:8000/health
+```
+
+### Build & Push (for Maintainers):
+```bash
+docker build -t <your-registry-username>/gridwise-api:latest .
+docker push <your-registry-username>/gridwise-api:latest
+```
+
+---
 
 ## ⚠️ Known Limitations
 
-While highly optimized, this solution has a few practical constraints:
-1. **External Network Latency**: Because we rely on the Groq API for semantic extraction, total request latency is heavily bottlenecked by the network round-trip time to Groq's servers (typically ~1-2 seconds). The internal mathematical optimization itself takes `< 50ms`.
-2. **API Key Dependency**: The application will instantly fail if the `GROQ_API_KEY` environment variable is not provided or if the key runs out of credits.
-3. **LLM Hallucination Ceiling**: While our deterministic guardrails catch formatting errors and out-of-bounds numbers, the system is fundamentally dependent on the LLM correctly classifying the *intent* of the note. If the LLM entirely misclassifies a complex note (e.g., mistaking a `no_charge_window` for a `solar_reduction`), the guardrails cannot mathematically save it. However, the system prompt is highly tuned to mitigate this.
+1. **External API Dependency**: Semantic interpretation depends on the Groq API availability and network round-trip latency. Internal mathematical optimization is sub-second ($< 50\text{ms}$).
+2. **API Quota**: Free-tier Groq API keys may experience rate limiting under high concurrency; the client includes exponential backoff retry logic to handle rate limit bursts.
