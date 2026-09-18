@@ -1,8 +1,11 @@
 import json
 import time
 import math
+import sys
 from fastapi.testclient import TestClient
 from main import app
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 client = TestClient(app)
 

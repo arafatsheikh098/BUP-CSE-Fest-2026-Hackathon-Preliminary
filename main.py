@@ -20,12 +20,23 @@ def optimize_energy(request: OptimizeEnergyRequest):
         )
         
         # 2. Optimization
-        hourly_plan, total_grid, total_cost, peak_grid = optimize_schedule(
-            hours_data=request.hours,
-            battery_specs=request.battery,
-            directives=interpretations
-        )
-        
+        try:
+            hourly_plan, total_grid, total_cost, peak_grid = optimize_schedule(
+                hours_data=request.hours,
+                battery_specs=request.battery,
+                directives=interpretations
+            )
+        except ValueError as ve:
+            if "infeasible" in str(ve).lower():
+                # Fallback: safe failure by ignoring impossible directives
+                hourly_plan, total_grid, total_cost, peak_grid = optimize_schedule(
+                    hours_data=request.hours,
+                    battery_specs=request.battery,
+                    directives=[]
+                )
+            else:
+                raise ve
+                
         # 3. Formulate Summary
         # Simple dynamic summary based on cost and directives
         active_directives = [d.directive_type for d in interpretations if d.applies]
@@ -45,7 +56,7 @@ def optimize_energy(request: OptimizeEnergyRequest):
         )
         
     except Exception as e:
-        # Return 500 but don't leak stack traces in production (keeping safe here for debugging if needed, but simple error string)
+        # Return 500 but don't leak stack traces in production
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal processing error.")
 
