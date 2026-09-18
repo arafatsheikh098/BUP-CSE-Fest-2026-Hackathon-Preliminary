@@ -17,13 +17,13 @@ def run_tests():
     
     execution_times = []
     
-    for case in data:
-        scenario_id = case['scenario_id']
+    for case in data['cases']:
+        scenario_id = case['id']
         print(f"\nTesting Case {scenario_id}")
         
         # Call the endpoint and measure time
         start_time = time.time()
-        response = client.post("/optimize-energy", json=case)
+        response = client.post("/optimize-energy", json=case['input'])
         end_time = time.time()
         
         exec_time = end_time - start_time
