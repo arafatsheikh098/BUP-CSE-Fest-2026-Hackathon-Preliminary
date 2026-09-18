@@ -1,19 +1,22 @@
 import json
 import math
+import sys
 from fastapi.testclient import TestClient
 from main import app
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 client = TestClient(app)
 
 def run_tests():
-    with open('BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json', 'r') as f:
+    with open('BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
         
         
     passed = 0
     total = len(data['cases'])
     
-    with open('api_results.md', 'w') as out_f:
+    with open('api_results.md', 'w', encoding='utf-8') as out_f:
         out_f.write("# GridWise API Test Results\n\n")
         out_f.write("This file contains the validation results for all 10 public sample cases.\n\n")
         

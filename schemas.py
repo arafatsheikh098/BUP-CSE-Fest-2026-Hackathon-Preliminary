@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal, Dict, Any
+from typing import List, Optional, Literal, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 # --- Request Schemas ---
@@ -22,8 +22,34 @@ class OptimizeEnergyRequest(BaseModel):
     hours: List[HourEntry]
     battery: BatterySpecs
 
-# --- Inner Structures for Directives ---
+# --- Per-Directive-Type Structured Adjustment Models ---
+# Each model contains ONLY the fields required by the Problem Statement Section 04.
 
+class SolarReductionAdjustment(BaseModel):
+    hours: List[int]
+    factor: float
+
+class MinBatteryReserveAdjustment(BaseModel):
+    hours: List[int]
+    minimum_energy_kwh: float
+
+class WindowOnlyAdjustment(BaseModel):
+    """Used for no_charge_window and no_discharge_window (hours only)."""
+    hours: List[int]
+
+class MaxGridWindowAdjustment(BaseModel):
+    hours: List[int]
+    max_grid_kwh: float
+
+# Union type for the response schema
+StructuredAdjustmentType = Union[
+    SolarReductionAdjustment,
+    MinBatteryReserveAdjustment,
+    WindowOnlyAdjustment,
+    MaxGridWindowAdjustment,
+]
+
+# --- Legacy flat model for internal optimizer use ---
 class StructuredAdjustment(BaseModel):
     hours: Optional[List[int]] = None
     factor: Optional[float] = None
@@ -36,7 +62,7 @@ class DirectiveInterpretationEntry(BaseModel):
     note_index: int
     applies: bool
     directive_type: str
-    structured_adjustment: Optional[StructuredAdjustment] = None
+    structured_adjustment: Optional[StructuredAdjustmentType] = None
     explanation: str
 
 class HourlyPlanEntry(BaseModel):

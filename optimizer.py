@@ -1,6 +1,10 @@
 import pulp
 from typing import List, Tuple
-from schemas import HourEntry, BatterySpecs, DirectiveInterpretationEntry, HourlyPlanEntry
+from schemas import (
+    HourEntry, BatterySpecs, DirectiveInterpretationEntry, HourlyPlanEntry,
+    SolarReductionAdjustment, MinBatteryReserveAdjustment,
+    WindowOnlyAdjustment, MaxGridWindowAdjustment,
+)
 
 def optimize_schedule(
     hours_data: List[HourEntry],
@@ -24,17 +28,17 @@ def optimize_schedule(
             adj = d.structured_adjustment
             hours = adj.hours or []
             
-            if d.directive_type == "solar_reduction" and adj.factor is not None:
+            if d.directive_type == "solar_reduction" and isinstance(adj, SolarReductionAdjustment):
                 for h in hours:
                     if h in effective_solar:
                         effective_solar[h] *= adj.factor
                         
-            elif d.directive_type == "minimum_battery_reserve" and adj.minimum_energy_kwh is not None:
+            elif d.directive_type == "minimum_battery_reserve" and isinstance(adj, MinBatteryReserveAdjustment):
                 for h in hours:
                     if h in min_reserve:
                         min_reserve[h] = max(min_reserve[h], adj.minimum_energy_kwh)
                         
-            elif d.directive_type == "max_grid_window" and adj.max_grid_kwh is not None:
+            elif d.directive_type == "max_grid_window" and isinstance(adj, MaxGridWindowAdjustment):
                 for h in hours:
                     if h in max_grid:
                         # If multiple caps, take the strictest (minimum)

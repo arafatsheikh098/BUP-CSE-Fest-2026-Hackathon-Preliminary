@@ -19,18 +19,16 @@ This file contains the validation results for all 10 public sample cases.
         12,
         13
       ],
-      "factor": 0.25,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      "factor": 0.25
     },
-    "explanation": "Solar output is reduced to 25% during rooftop panel cleaning from 12:00 to 14:00."
+    "explanation": "Solar output reduced to 25% of forecast during panel washing from noon to 2\u202fPM."
   },
   {
     "note_index": 1,
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "The note about the sports office registration deadline does not affect the 24-hour energy schedule."
+    "explanation": "Registration deadline change does not affect energy scheduling."
   }
 ]
 ```
@@ -54,12 +52,9 @@ This file contains the validation results for all 10 public sample cases.
         2,
         3,
         4
-      ],
-      "factor": null,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      ]
     },
-    "explanation": "Battery charging is prohibited from 2\u202fAM (hour\u202f2) up to but not including 5\u202fAM (hour\u202f5) due to charger isolation for maintenance."
+    "explanation": "Battery charging unavailable from 2 AM to 5 AM due to maintenance."
   }
 ]
 ```
@@ -84,11 +79,9 @@ This file contains the validation results for all 10 public sample cases.
         19,
         20
       ],
-      "factor": null,
-      "minimum_energy_kwh": 100.0,
-      "max_grid_kwh": null
+      "minimum_energy_kwh": 100.0
     },
-    "explanation": "Maintain at least 50% (100\u202fkWh) of the 200\u202fkWh battery capacity from 6\u202fPM to 9\u202fPM for emergency operations."
+    "explanation": "Battery must keep at least 50% (100\u202fkWh) of its 200\u202fkWh capacity from 6\u202fPM to 9\u202fPM for emergencies."
   }
 ]
 ```
@@ -111,12 +104,9 @@ This file contains the validation results for all 10 public sample cases.
       "hours": [
         18,
         19
-      ],
-      "factor": null,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      ]
     },
-    "explanation": "Battery discharge is prohibited during the protection testing window from 6\u202fPM to 8\u202fPM."
+    "explanation": "Battery discharge prohibited from 6\u202fPM to 8\u202fPM."
   }
 ]
 ```
@@ -141,11 +131,9 @@ This file contains the validation results for all 10 public sample cases.
         19,
         20
       ],
-      "factor": null,
-      "minimum_energy_kwh": null,
       "max_grid_kwh": 155.0
     },
-    "explanation": "Grid import is limited to 155\u202fkWh per hour from 6\u202fPM to 9\u202fPM due to a temporary feeder constraint."
+    "explanation": "Grid import capped at 155\u202fkWh per hour from 6\u202fPM to 9\u202fPM."
   }
 ]
 ```
@@ -169,11 +157,9 @@ This file contains the validation results for all 10 public sample cases.
         10,
         11
       ],
-      "factor": 0.5,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      "factor": 0.5
     },
-    "explanation": "Cloud cover reduces solar output to 50% of forecast from 10 AM to noon."
+    "explanation": "Solar output reduced to 50% of forecast from 10 AM to noon."
   },
   {
     "note_index": 1,
@@ -183,19 +169,16 @@ This file contains the validation results for all 10 public sample cases.
       "hours": [
         14,
         15
-      ],
-      "factor": null,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      ]
     },
-    "explanation": "Charging circuit unavailable from 2 PM until 4 PM."
+    "explanation": "Battery charging unavailable from 2 PM to 4 PM."
   },
   {
     "note_index": 2,
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "Library book-return hour extension does not affect the energy schedule."
+    "explanation": "Library schedule change does not affect energy schedule."
   }
 ]
 ```
@@ -221,11 +204,9 @@ This file contains the validation results for all 10 public sample cases.
         20,
         21
       ],
-      "factor": null,
-      "minimum_energy_kwh": 90.0,
-      "max_grid_kwh": null
+      "minimum_energy_kwh": 90.0
     },
-    "explanation": "Maintain at least 90\u202fkWh in the battery between 6\u202fPM and 10\u202fPM."
+    "explanation": "Maintain at least 90\u202fkWh in battery from 6\u202fPM to 10\u202fPM for emergency services."
   },
   {
     "note_index": 1,
@@ -236,11 +217,9 @@ This file contains the validation results for all 10 public sample cases.
         19,
         20
       ],
-      "factor": null,
-      "minimum_energy_kwh": null,
       "max_grid_kwh": 180.0
     },
-    "explanation": "Limit grid import to 180\u202fkWh from 7\u202fPM to 9\u202fPM."
+    "explanation": "Limit grid import to 180\u202fkWh per hour from 7\u202fPM to 9\u202fPM due to transformer capacity."
   }
 ]
 ```
@@ -263,12 +242,9 @@ This file contains the validation results for all 10 public sample cases.
       "hours": [
         11,
         12
-      ],
-      "factor": null,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      ]
     },
-    "explanation": "Charging is disabled while technicians inspect the charger."
+    "explanation": "Battery charging disabled from 11 AM to 1 PM for charger inspection."
   },
   {
     "note_index": 1,
@@ -278,12 +254,9 @@ This file contains the validation results for all 10 public sample cases.
       "hours": [
         17,
         18
-      ],
-      "factor": null,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      ]
     },
-    "explanation": "Discharging is prohibited during relay testing."
+    "explanation": "Battery discharging prohibited from 5 PM to 7 PM during relay testing."
   }
 ]
 ```
@@ -308,18 +281,16 @@ This file contains the validation results for all 10 public sample cases.
         12,
         13
       ],
-      "factor": 0.2,
-      "minimum_energy_kwh": null,
-      "max_grid_kwh": null
+      "factor": 0.2
     },
-    "explanation": "Rooftop solar output is reduced by 80% during inverter work from 11\u202fAM to 2\u202fPM."
+    "explanation": "Solar output reduced by 80%, leaving 20% usable from 11 AM to 2 PM."
   },
   {
     "note_index": 1,
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "The note about club notices does not affect the 24\u2011hour energy schedule."
+    "explanation": "Student affairs club notices do not affect the energy schedule."
   }
 ]
 ```
@@ -345,11 +316,9 @@ This file contains the validation results for all 10 public sample cases.
         20,
         21
       ],
-      "factor": null,
-      "minimum_energy_kwh": 80.0,
-      "max_grid_kwh": null
+      "minimum_energy_kwh": 80.0
     },
-    "explanation": "Applied directive."
+    "explanation": "Battery must retain at least 80\u202fkWh from 6\u202fPM to 10\u202fPM."
   },
   {
     "note_index": 1,
@@ -361,18 +330,16 @@ This file contains the validation results for all 10 public sample cases.
         20,
         21
       ],
-      "factor": null,
-      "minimum_energy_kwh": null,
       "max_grid_kwh": 190.0
     },
-    "explanation": "Applied directive."
+    "explanation": "Grid import limited to 190\u202fkWh per hour from 7\u202fPM to 10\u202fPM."
   },
   {
     "note_index": 2,
     "applies": false,
     "directive_type": "no_op",
     "structured_adjustment": null,
-    "explanation": "The note does not affect the 24-hour energy schedule."
+    "explanation": "Seminar room booking does not affect energy scheduling."
   }
 ]
 ```
